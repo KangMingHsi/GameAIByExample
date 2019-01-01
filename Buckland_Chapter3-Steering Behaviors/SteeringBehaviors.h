@@ -73,6 +73,7 @@ private:
     hide               = 0x04000,
     flock              = 0x08000,
     offset_pursuit     = 0x10000,
+	follow_master	   = 0x20000
   };
 
 private:
@@ -166,7 +167,7 @@ private:
   //what type of method is used to sum any active behavior
   summing_method  m_SummingMethod;
 
-
+  bool			m_bBeFollowed;
   //this function tests if a specific bit of m_iFlags is set
   bool      On(behavior_type bt){return (m_iFlags & bt) == bt;}
 
@@ -231,6 +232,7 @@ private:
   //method attempts to put an obstacle between itself and its opponent
   Vector2D Hide(const Vehicle* hunter, const std::vector<BaseGameEntity*>& obstacles);
 
+  Vector2D FollowMaster(const Vehicle* leader);
 
   // -- Group Behaviors -- //
 
@@ -309,6 +311,9 @@ public:
 
   void      SetSummingMethod(summing_method sm){m_SummingMethod = sm;}
 
+  bool IsBeFollowed() const { return m_bBeFollowed; }
+  void BeFollowed() { m_bBeFollowed = On(follow_master); }
+  void UnFollowed() { m_bBeFollowed = false; }
 
   void FleeOn(){m_iFlags |= flee;}
   void SeekOn(){m_iFlags |= seek;}
@@ -326,6 +331,7 @@ public:
   void HideOn(Vehicle* v){m_iFlags |= hide; m_pTargetAgent1 = v;}
   void OffsetPursuitOn(Vehicle* v1, const Vector2D offset){m_iFlags |= offset_pursuit; m_vOffset = offset; m_pTargetAgent1 = v1;}  
   void FlockingOn(){CohesionOn(); AlignmentOn(); SeparationOn(); WanderOn();}
+  void FollowMasterOn(Vehicle* v) { m_iFlags |= follow_master; m_pTargetAgent1 = v;}
 
   void FleeOff()  {if(On(flee))   m_iFlags ^=flee;}
   void SeekOff()  {if(On(seek))   m_iFlags ^=seek;}
@@ -343,6 +349,7 @@ public:
   void HideOff(){if(On(hide)) m_iFlags ^=hide;}
   void OffsetPursuitOff(){if(On(offset_pursuit)) m_iFlags ^=offset_pursuit;}
   void FlockingOff(){CohesionOff(); AlignmentOff(); SeparationOff(); WanderOff();}
+  void FollowMasterOff() { if (On(follow_master))   m_iFlags ^= follow_master;}
 
   bool isFleeOn(){return On(flee);}
   bool isSeekOn(){return On(seek);}
@@ -359,6 +366,7 @@ public:
   bool isInterposeOn(){return On(interpose);}
   bool isHideOn(){return On(hide);}
   bool isOffsetPursuitOn(){return On(offset_pursuit);}
+  bool isFollowMasterOn() { return On(follow_master); }
 
   double DBoxLength()const{return m_dDBoxLength;}
   const std::vector<Vector2D>& GetFeelers()const{return m_Feelers;}

@@ -53,7 +53,8 @@ SteeringBehavior::SteeringBehavior(Vehicle* agent):
              m_dWeightEvade(Prm.EvadeWeight),
              m_dWeightFollowPath(Prm.FollowPathWeight),
              m_bCellSpaceOn(false),
-             m_SummingMethod(prioritized)
+             m_SummingMethod(prioritized),
+			 m_bBeFollowed(false)
 
 
 {
@@ -224,6 +225,14 @@ Vector2D SteeringBehavior::CalculatePrioritized()
     if (!AccumulateForce(m_vSteeringForce, force)) return m_vSteeringForce;
   }
 
+  if (On(follow_master))
+  {
+	  assert(m_pTargetAgent1 && "Evade target not assigned");
+
+	  force = FollowMaster(m_pTargetAgent1) * m_dWeightEvade;
+
+	  if (!AccumulateForce(m_vSteeringForce, force)) return m_vSteeringForce;
+  }
   
   if (On(flee))
   {
@@ -383,6 +392,12 @@ Vector2D SteeringBehavior::CalculateWeightedSum()
     m_vSteeringForce += Evade(m_pTargetAgent1) * m_dWeightEvade;
   }
 
+  if (On(follow_master))
+  {
+	  assert(m_pTargetAgent1 && "Evade target not assigned");
+
+	  m_vSteeringForce += FollowMaster(m_pTargetAgent1) * m_dWeightEvade;
+  }
 
   //these next three can be combined for flocking behavior (wander is
   //also a good behavior to add into this mix)
@@ -678,7 +693,7 @@ Vector2D SteeringBehavior::CalculateDithered()
       return m_vSteeringForce;
     }
   }
- 
+  
   return m_vSteeringForce;
 }
 
@@ -755,6 +770,67 @@ Vector2D SteeringBehavior::Arrive(Vector2D     TargetPos,
   }
 
   return Vector2D(0,0);
+}
+
+//------------------------------ FollowMaster ---------------------------------
+//
+//  this behavior creates a force that steers the agent towards the 
+//  leader
+//------------------------------------------------------------------------
+Vector2D SteeringBehavior::FollowMaster(const Vehicle* leader)
+{
+	Vector2D SteeringForce;
+	
+	if(!isSpacePartitioningOn())
+	{
+		return Arrive(m_pTargetAgent1->Pos(), fast);
+	}
+	else
+	{   
+		if (m_pTargetAgent2 == nullptr) 
+		{
+			for (auto pV = m_pVehicle->World()->CellSpace()->begin();
+				!m_pVehicle->World()->CellSpace()->end();
+				pV = m_pVehicle->World()->CellSpace()->next())
+			{
+				if (pV != m_pVehicle && (pV->Steering()->m_pTargetAgent1 == leader)
+					&& (pV->Steering()->m_pTargetAgent2 != nullptr) && !pV->Steering()->IsBeFollowed())
+				{
+					pV->Steering()->BeFollowed();
+					m_pTargetAgent2 = pV;
+					
+
+					break;
+				}
+			}
+
+			if (m_pTargetAgent2 == nullptr)
+			{
+				m_pTargetAgent2 = (Vehicle*)leader;
+			}
+		}
+		else
+		{
+			for (auto pV = m_pVehicle->World()->CellSpace()->begin();
+				!m_pVehicle->World()->CellSpace()->end();
+				pV = m_pVehicle->World()->CellSpace()->next())
+			{
+				if (pV != m_pVehicle && (pV->Steering()->m_pTargetAgent1 == leader)
+					&& (pV->Steering()->m_pTargetAgent2 == m_pTargetAgent2))
+				{
+					pV->Steering()->BeFollowed();
+					m_pTargetAgent2 = pV;
+
+
+					break;
+				}
+			}
+		}
+	}
+
+	SteeringForce += Arrive(m_pTargetAgent2->Pos(), slow);
+
+	return SteeringForce;
 }
 
 //------------------------------ Pursuit ---------------------------------
@@ -1174,9 +1250,9 @@ Vector2D SteeringBehavior::Cohesion(const vector<Vehicle*> &neighbors)
 Vector2D SteeringBehavior::SeparationPlus(const vector<Vehicle*> &neighbors)
 {  
   Vector2D SteeringForce;
-
+  
   //iterate through the neighbors and sum up all the position vectors
-  for (BaseGameEntity* pV = m_pVehicle->World()->CellSpace()->begin();
+  for (auto pV = m_pVehicle->World()->CellSpace()->begin();
                          !m_pVehicle->World()->CellSpace()->end();     
                        pV = m_pVehicle->World()->CellSpace()->next())
   {    
@@ -1185,10 +1261,13 @@ Vector2D SteeringBehavior::SeparationPlus(const vector<Vehicle*> &neighbors)
     if(pV != m_pVehicle)
     {
       Vector2D ToAgent = m_pVehicle->Pos() - pV->Pos();
-
       //scale the force inversely proportional to the agents distance  
       //from its neighbor.
-      SteeringForce += Vec2DNormalize(ToAgent)/ToAgent.Length();
+	  double Cos = Vec2DNormalize(ToAgent).Dot(pV->Heading()) / ToAgent.Length();
+	  Vector2D tmp = Cos * pV->Heading();
+	  //tmp += m_pVehicle->Side() * sin(acos(Cos));
+
+	  SteeringForce += tmp;//Vec2DNormalize(ToAgent)/ToAgent.Length();
     }
 
   }
