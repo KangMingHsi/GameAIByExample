@@ -119,6 +119,8 @@ void Defending::Execute(SoccerTeam* team)
   {
     team->GetFSM()->ChangeState(Attacking::Instance()); return;
   }
+
+  // one by one ****
 }
 
 

@@ -27,10 +27,6 @@ class FieldPlayer;
 class SoccerPitch;
 class GoalKeeper;
 class SupportSpotCalculator;
-
-
-
-
                 
 class SoccerTeam 
 {
@@ -64,7 +60,7 @@ private:
   PlayerBase*               m_pSupportingPlayer;
   PlayerBase*               m_pReceivingPlayer;
   PlayerBase*               m_pPlayerClosestToBall;
-
+  PlayerBase*               m_pSupportingDefensePlayer;
   //the squared distance the closest player is from the ball
   double                     m_dDistSqToBallOfClosestPlayer;
 
@@ -157,6 +153,7 @@ public:
   //attacker to travel to the spot
   PlayerBase* DetermineBestSupportingAttacker();
   
+  PlayerBase* DetermineBestSupportingDefender();
 
   const std::vector<PlayerBase*>& Members()const{return m_Players;}  
 
@@ -175,12 +172,16 @@ public:
   void                 SetPlayerClosestToBall(PlayerBase* plyr){m_pPlayerClosestToBall=plyr;}
   PlayerBase*          PlayerClosestToBall()const{return m_pPlayerClosestToBall;}
   
+
   double               ClosestDistToBallSq()const{return m_dDistSqToBallOfClosestPlayer;}
 
   Vector2D             GetSupportSpot()const{return m_pSupportSpotCalc->GetBestSupportingSpot();}
 
   PlayerBase*          SupportingPlayer()const{return m_pSupportingPlayer;}
   void                 SetSupportingPlayer(PlayerBase* plyr){m_pSupportingPlayer = plyr;}
+
+  PlayerBase*          SupportingDefensePlayer()const { return m_pSupportingDefensePlayer; }
+  void                 SetSupportingDefensePlayer(PlayerBase* plyr) { m_pSupportingDefensePlayer = plyr; }
 
   PlayerBase*          Receiver()const{return m_pReceivingPlayer;}
   void                 SetReceiver(PlayerBase* plyr){m_pReceivingPlayer = plyr;}

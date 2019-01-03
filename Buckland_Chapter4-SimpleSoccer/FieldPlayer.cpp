@@ -12,7 +12,7 @@
 #include "SoccerTeam.h"
 #include "time/Regulator.h"
 #include "Debug/DebugConsole.h"
-
+#include "SoccerPitch.h"
 
 #include <limits>
 
@@ -187,5 +187,61 @@ void FieldPlayer::Render()
   }   
 }
 
+void  FieldPlayer::FindSafeDribbleDirection(Vector2D& kickDirection)
+{
+	double distToMe = Prm.PlayerComfortZoneSq;
 
+	auto opponentPlayer = Team()->Opponents()->Members().cbegin();
+	auto mostThreatenedPlayer = std::remove_const_t<decltype(opponentPlayer)>(opponentPlayer);
+	
+	for (opponentPlayer; opponentPlayer != Team()->Opponents()->Members().cend(); ++opponentPlayer)
+	{
+		if (PositionInFrontOfPlayer((*opponentPlayer)->Pos()) &&
+			(Vec2DDistanceSq(Pos(), (*opponentPlayer)->Pos()) < distToMe))
+		{
+			distToMe = Vec2DDistanceSq(Pos(), (*opponentPlayer)->Pos());
+			mostThreatenedPlayer = std::remove_const_t<decltype(opponentPlayer)>(opponentPlayer);
+		}
+	}
+	
+	auto playerToWallDistanceFunc = [player = this, &walls = Team()->Pitch()->Walls()](int idx) {
+		Vector2D ThisCollisionPoint = player->Pos() - (walls[idx].Normal() * player->BRadius());
+		return DistanceToRayPlaneIntersection(ThisCollisionPoint,
+			walls[idx].Normal().GetReverse(),
+			walls[idx].From(),
+			walls[idx].Normal());};
+
+	double angle = 35.0;
+
+	if (playerToWallDistanceFunc(2) < playerToWallDistanceFunc(5))
+	{
+		if (Heading().x < -0.00001)
+			angle *= -1;
+		if ((*mostThreatenedPlayer)->Pos().y > Pos().y)
+		{
+			angle *= 1;
+		}
+		else 
+		{
+			angle *= 2;
+		}
+
+		//double time = Ball()->TimeToCoverDistance(Pos(), Pos()+kickDirection*Ball()->Velocity().Length(), Prm.MaxDribbleForce);
+	}
+	else
+	{
+		if (Heading().x > 0.00001)
+			angle *= -1;
+		if ((*mostThreatenedPlayer)->Pos().y > Pos().y)
+		{
+			angle *= 1;
+		}
+		else
+		{
+			angle *= 2;
+		}
+	}
+
+	Vec2DRotateAroundOrigin(kickDirection, angle);
+}
 

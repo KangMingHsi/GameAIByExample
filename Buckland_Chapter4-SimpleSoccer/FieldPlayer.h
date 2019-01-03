@@ -69,6 +69,7 @@ public:
 
   bool        isReadyForNextKick()const{return m_pKickLimiter->isReady();}
 
+  void		  FindSafeDribbleDirection(Vector2D& kickDirection);
          
 };
 

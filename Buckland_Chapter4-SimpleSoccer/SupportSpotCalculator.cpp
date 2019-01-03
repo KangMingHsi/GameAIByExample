@@ -123,8 +123,16 @@ Vector2D SupportSpotCalculator::DetermineBestSupportingPosition()
         curSpot->m_dScore += Prm.Spot_DistFromControllingPlayerScore *
                              (OptimalDistance-temp)/OptimalDistance;  
       }
+
+
+	  const double OptDistance = 100.0;
+	  // Test 4. need to be near to recevier
+	  dist = Vec2DDistance(m_pTeam->SupportingPlayer()->Pos(), curSpot->m_vPos);
+	  temp = fabs(OptDistance - dist);
+	  if(temp < OptDistance)
+		curSpot->m_dScore += Prm.Spot_DistFromControllingPlayerScore * (OptDistance - temp) / OptDistance;
     }
-    
+
     //check to see if this spot has the highest score so far
     if (curSpot->m_dScore > BestScoreSoFar)
     {

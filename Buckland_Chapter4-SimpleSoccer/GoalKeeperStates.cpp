@@ -256,9 +256,12 @@ void PutBallBackInPlay::Execute(GoalKeeper* keeper)
                               Prm.MaxPassingForce,
                               Prm.GoalkeeperMinPassDist))
   {     
+	double force = Prm.MaxPassingForce;
+	Vector2D direction = BallTarget - keeper->Ball()->Pos();
+	keeper->Ball()->ForceJustToTarget(direction, force);
     //make the pass   
-    keeper->Ball()->Kick(Vec2DNormalize(BallTarget - keeper->Ball()->Pos()),
-                         Prm.MaxPassingForce);
+    keeper->Ball()->Kick(Vec2DNormalize(direction),
+		force);
 
     //goalkeeper no longer has ball 
     keeper->Pitch()->SetGoalKeeperHasBall(false);

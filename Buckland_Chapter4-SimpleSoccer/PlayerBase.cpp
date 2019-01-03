@@ -221,6 +221,50 @@ void PlayerBase::FindSupport()const
   }
 }
 
+void PlayerBase::FindDefenseSupport() const
+{
+	if (Team()->Opponents()->SupportingPlayer() == nullptr) return;
+	//if there is no support we need to find a suitable player.
+	PlayerBase* BestSupportPly = Team()->DetermineBestSupportingDefender();
+
+	if (BestSupportPly == nullptr) return;
+
+	if (Team()->SupportingDefensePlayer() == nullptr)
+	{
+		Team()->SetSupportingDefensePlayer(BestSupportPly);
+		
+		Dispatcher->DispatchMsg(SEND_MSG_IMMEDIATELY,
+			ID(),
+			Team()->SupportingDefensePlayer()->ID(),
+			Msg_SupportDefense,
+			NULL);
+	}
+
+	//if the best player available to support the attacker changes, update
+	//the pointers and send messages to the relevant players to update their
+	//states
+	if ((BestSupportPly != nullptr) && (BestSupportPly != Team()->SupportingDefensePlayer()))
+	{/*
+		if (Team()->SupportingDefensePlayer() != nullptr)
+		{
+			Dispatcher->DispatchMsg(SEND_MSG_IMMEDIATELY,
+				ID(),
+				Team()->SupportingDefensePlayer()->ID(),
+				Msg_GoHome,
+				NULL);
+
+		}*/
+
+		Team()->SetSupportingDefensePlayer(BestSupportPly);
+
+		Dispatcher->DispatchMsg(SEND_MSG_IMMEDIATELY,
+			ID(),
+			Team()->SupportingDefensePlayer()->ID(),
+			Msg_SupportDefense,
+			NULL);
+	}
+}
+
 
   //calculate distance to opponent's goal. Used frequently by the passing//methods
 double PlayerBase::DistToOppGoal()const

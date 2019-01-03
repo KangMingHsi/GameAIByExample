@@ -89,6 +89,8 @@ public:
   
   //this places the ball at the desired location and sets its velocity to zero
   void      PlaceAtPosition(Vector2D NewPos);
+
+  void ForceJustToTarget(Vector2D vec, double& force) const;
 };
 
 

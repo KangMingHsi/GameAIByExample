@@ -131,7 +131,44 @@ void SoccerTeam::CalculateClosestPlayerToBall()
 
   m_dDistSqToBallOfClosestPlayer = ClosestSoFar;
 }
+//------------------------ DetermineBestSupportingDefender ------------------
+//
+//  sets m_iClosestPlayerToOppenentSupportPlayer to the player closest to the OppenentSupportPlayer
+//------------------------------------------------------------------------
+PlayerBase* SoccerTeam::DetermineBestSupportingDefender()
+{
+	double ClosestSoFar = MaxFloat;
+	PlayerBase* BestPlayer = nullptr;
 
+	if (Opponents()->m_pSupportingPlayer == nullptr)
+	{
+		return BestPlayer;
+	}
+
+	auto it = m_Players.begin();
+
+	for (it; it != m_Players.end(); ++it)
+	{
+		//only attackers utilize the BestSupportingSpot
+		if (((*it)->Role() == PlayerBase::defender) && (m_pPlayerClosestToBall != (*it)))
+		{
+			//calculate the dist. Use the squared value to avoid sqrt
+			double dist = Vec2DDistanceSq((*it)->Pos(), Opponents()->m_pSupportingPlayer->Pos());
+
+			//if the distance is the closest so far and the player is not a
+			//goalkeeper and the player is not the one currently controlling
+			//the ball, keep a record of this player
+			if ((dist < ClosestSoFar))
+			{
+				ClosestSoFar = dist;
+
+				BestPlayer = (*it);
+			}
+		}
+	}
+
+	return BestPlayer;
+}
 
 //------------- DetermineBestSupportingAttacker ------------------------
 //

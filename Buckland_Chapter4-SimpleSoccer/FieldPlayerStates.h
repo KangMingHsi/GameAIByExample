@@ -192,7 +192,25 @@ public:
   bool OnMessage(FieldPlayer*, const Telegram&){return false;}
 };
 
+class SupportDefense : public State<FieldPlayer>
+{
+private:
 
+	SupportDefense() {}
+
+public:
+
+	//this is a singleton
+	static SupportDefense* Instance();
+
+	void Enter(FieldPlayer* player);
+
+	void Execute(FieldPlayer* player);
+
+	void Exit(FieldPlayer* player);
+
+	bool OnMessage(FieldPlayer*, const Telegram&) { return false; }
+};
 
 
   

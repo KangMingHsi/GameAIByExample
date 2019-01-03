@@ -58,7 +58,6 @@ protected:
   //a lot so it's calculated once each time-step and stored here.
   double                   m_dDistSqToBall;
 
-  
   //the vertex buffer
   std::vector<Vector2D>   m_vecPlayerVB;
   //the buffer for the transformed vertices
@@ -92,7 +91,7 @@ public:
   //this messages the player that is closest to the supporting spot to
   //change state to support the attacking player
   void        FindSupport()const;
-
+  void		FindDefenseSupport()const;
   //returns true if the ball can be grabbed by the goalkeeper
   bool        BallWithinKeeperRange()const;
 

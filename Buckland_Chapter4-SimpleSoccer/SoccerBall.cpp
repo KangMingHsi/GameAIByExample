@@ -100,7 +100,6 @@ double SoccerBall::TimeToCoverDistance(Vector2D A,
   if (term <= 0.0) return -1.0;
 
   double v = sqrt(term);
-
   //it IS possible for the ball to reach B and we know its speed when it
   //gets there, so now it's easy to calculate the time using the equation
   //
@@ -258,5 +257,16 @@ void SoccerBall::PlaceAtPosition(Vector2D NewPos)
   m_vOldPos = m_vPosition;
   
   m_vVelocity.Zero();
+}
+
+void SoccerBall::ForceJustToTarget(Vector2D vec, double& force) const
+{
+	const double MinSpeed = 10.0;
+
+	double DistanceToCover = vec.Length();
+
+	double tmp = m_dMass * sqrt(MinSpeed*MinSpeed - 2.0*DistanceToCover*Prm.Friction);
+
+	force = min(force, tmp);
 }
 

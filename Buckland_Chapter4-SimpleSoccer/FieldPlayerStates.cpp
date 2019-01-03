@@ -47,40 +47,56 @@ void GlobalPlayerState::Execute(FieldPlayer* player)
 
 bool GlobalPlayerState::OnMessage(FieldPlayer* player, const Telegram& telegram)
 {
-  switch(telegram.Msg)
-  {
-  case Msg_ReceiveBall:
-    {
-      //set the target
-      player->Steering()->SetTarget(*(static_cast<Vector2D*>(telegram.ExtraInfo)));
+	switch (telegram.Msg)
+	{
+	case Msg_ReceiveBall:
+	{
+		//set the target
+		player->Steering()->SetTarget(*(static_cast<Vector2D*>(telegram.ExtraInfo)));
 
-      //change state 
-      player->GetFSM()->ChangeState(ReceiveBall::Instance());
+		//change state 
+		player->GetFSM()->ChangeState(ReceiveBall::Instance());
 
-      return true;
-    }
+		return true;
+	}
 
-    break;
+	break;
 
-  case Msg_SupportAttacker:
-    {
-      //if already supporting just return
-      if (player->GetFSM()->isInState(*SupportAttacker::Instance()))
-      {
-        return true;
-      }
-      
-      //set the target to be the best supporting position
-      player->Steering()->SetTarget(player->Team()->GetSupportSpot());
+	case Msg_SupportAttacker:
+	{
+		//if already supporting just return
+		if (player->GetFSM()->isInState(*SupportAttacker::Instance()))
+		{
+			return true;
+		}
 
-      //change the state
-      player->GetFSM()->ChangeState(SupportAttacker::Instance());
+		//set the target to be the best supporting position
+		player->Steering()->SetTarget(player->Team()->GetSupportSpot());
 
-      return true;
-    }
+		//change the state
+		player->GetFSM()->ChangeState(SupportAttacker::Instance());
 
-    break;
+		return true;
+	}
 
+	break;
+	case Msg_SupportDefense:
+	{
+		//if already supporting just return
+		if (player->GetFSM()->isInState(*SupportDefense::Instance()))
+		{
+			return true;
+		}
+
+		//set the target to be the best supporting position
+		player->Steering()->SetTarget(player->Team()->Opponents()->SupportingPlayer()->Pos());
+
+		//change the state
+		player->GetFSM()->ChangeState(SupportDefense::Instance());
+
+		return true;
+	}
+	break;
  case Msg_Wait:
     {
       //change the state
@@ -126,7 +142,10 @@ bool GlobalPlayerState::OnMessage(FieldPlayer* player, const Telegram& telegram)
         return true;
       }
       
-      //make the pass   
+      //make the pass  
+	  double force = Prm.MaxPassingForce;
+
+	  player->Ball()->ForceJustToTarget(receiver->Pos() - player->Ball()->Pos(), force);
       player->Ball()->Kick(receiver->Pos() - player->Ball()->Pos(),
                            Prm.MaxPassingForce);
 
@@ -190,16 +209,20 @@ void ChaseBall::Execute(FieldPlayer* player)
     
     return;
   }
-                                                                              
+  
+
   //if the player is the closest player to the ball then he should keep
   //chasing it
   if (player->isClosestTeamMemberToBall())
   {
-    player->Steering()->SetTarget(player->Ball()->Pos());
 
+    player->Steering()->SetTarget(player->Ball()->Pos());
+	player->FindDefenseSupport();
     return;
   }
   
+  //player->FindDefenseSupport();
+
   //if the player is not closest to the ball anymore, he should return back
   //to his home region and wait for another opportunity
   player->GetFSM()->ChangeState(ReturnToHomeRegion::Instance());
@@ -211,8 +234,51 @@ void ChaseBall::Exit(FieldPlayer* player)
   player->Steering()->SeekOff();
 }
 
+//*****************************************************************************SUPPORT DEFENSE PLAYER
+
+SupportDefense* SupportDefense::Instance()
+{
+	static SupportDefense instance;
+
+	return &instance;
+}
 
 
+void SupportDefense::Enter(FieldPlayer* player)
+{
+	player->Steering()-> InterposeOn((player->Team()->Opponents()->SupportingPlayer()->Pos() - player->Ball()->Pos()).Length()/2);
+	player->Steering()->SetTarget(player->Team()->Opponents()->SupportingPlayer()->Pos());
+
+#ifdef PLAYER_STATE_INFO_ON
+	debug_con << "Player " << player->ID() << " enters support defense state" << "";
+#endif
+}
+
+void SupportDefense::Execute(FieldPlayer* player)
+{
+	//if his team loses control go back home
+	if (player->Team()->InControl() || player->Team()->SupportingDefensePlayer() != player)
+	{
+		player->GetFSM()->ChangeState(ReturnToHomeRegion::Instance()); return;
+	}
+
+
+	//if the best supporting spot changes, change the steering target
+	if (player->Team()->Opponents()->SupportingPlayer()->Pos() != player->Steering()->Target())
+	{
+		player->Steering()->SetTarget(player->Team()->Opponents()->SupportingPlayer()->Pos());
+		player->Steering()->InterposeOn((player->Team()->Opponents()->SupportingPlayer()->Pos() - player->Ball()->Pos()).Length() / 2);
+	}
+}
+
+
+void SupportDefense::Exit(FieldPlayer* player)
+{
+	//set supporting player to null so that the team knows it has to 
+	//determine a new one.
+	player->Steering()->InterposeOff();
+	player->Team()->SetSupportingDefensePlayer(nullptr);
+}
 //*****************************************************************************SUPPORT ATTACKING PLAYER
 
 SupportAttacker* SupportAttacker::Instance()
@@ -419,7 +485,7 @@ void Wait::Execute(FieldPlayer* player)
    //if the ball is nearer this player than any other team member  AND
     //there is not an assigned receiver AND neither goalkeeper has
     //the ball, go chase it
-   if (player->isClosestTeamMemberToBall() &&
+   if ((player->isClosestTeamMemberToBall()) &&
        player->Team()->Receiver() == NULL  &&
        !player->Pitch()->GoalKeeperHasBall())
    {
@@ -545,7 +611,8 @@ void KickBall::Execute(FieldPlayer* player)
     BallTarget = AddNoiseToKick(player->Ball()->Pos(), BallTarget);
 
     Vector2D KickDirection = BallTarget - player->Ball()->Pos();
-   
+    
+	player->Ball()->ForceJustToTarget(KickDirection, power);
     player->Ball()->Kick(KickDirection, power);
 
     #ifdef PLAYER_STATE_INFO_ON
@@ -632,7 +699,12 @@ void Dribble::Execute(FieldPlayer* player)
   //kick the ball down the field
   else
   {
-    player->Ball()->Kick(player->Team()->HomeGoal()->Facing(),
+	auto kickDirection = player->Team()->HomeGoal()->Facing();
+	if (player->isThreatened())
+	{
+		player->FindSafeDribbleDirection(kickDirection);
+	}
+    player->Ball()->Kick(kickDirection,
                          Prm.MaxDribbleForce);  
   }
 

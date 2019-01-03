@@ -24,7 +24,9 @@ inline std::string MessageToString(int msg)
   case Msg_Wait:
 
     return "Msg_Wait";
+  case Msg_SupportDefense:
 
+	return "Msg_SupportDefense";
   default:
 
     return "INVALID MESSAGE!!";

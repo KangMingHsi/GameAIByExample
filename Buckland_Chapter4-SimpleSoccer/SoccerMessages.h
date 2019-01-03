@@ -9,7 +9,8 @@ enum MessageType
   Msg_PassToMe,
   Msg_SupportAttacker,
   Msg_GoHome,
-  Msg_Wait
+  Msg_Wait,
+  Msg_SupportDefense
 };
 
 //converts an enumerated value to a string
