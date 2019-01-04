@@ -138,9 +138,9 @@ void SoccerTeam::CalculateClosestPlayerToBall()
 PlayerBase* SoccerTeam::DetermineBestSupportingDefender()
 {
 	double ClosestSoFar = MaxFloat;
-	PlayerBase* BestPlayer = nullptr;
+	PlayerBase* BestPlayer = NULL;
 
-	if (Opponents()->m_pSupportingPlayer == nullptr)
+	if (Opponents()->m_pSupportingPlayer == NULL)
 	{
 		return BestPlayer;
 	}

@@ -202,6 +202,7 @@ void ChaseBall::Enter(FieldPlayer* player)
 
 void ChaseBall::Execute(FieldPlayer* player)                                     
 {
+   player->DecreaseEndurance();
   //if the ball is within kicking range the player changes state to KickBall.
   if (player->BallWithinKickingRange())
   {
@@ -213,7 +214,7 @@ void ChaseBall::Execute(FieldPlayer* player)
 
   //if the player is the closest player to the ball then he should keep
   //chasing it
-  if (player->isClosestTeamMemberToBall())
+  if (player->isClosestTeamMemberToBall() || player->SpontaneousDefense())
   {
 
     player->Steering()->SetTarget(player->Ball()->Pos());
@@ -264,7 +265,7 @@ void SupportDefense::Execute(FieldPlayer* player)
 
 
 	//if the best supporting spot changes, change the steering target
-	if (player->Team()->Opponents()->SupportingPlayer()->Pos() != player->Steering()->Target())
+	if (player->Team()->Opponents()->SupportingPlayer() != NULL && player->Team()->Opponents()->SupportingPlayer()->Pos() != player->Steering()->Target())
 	{
 		player->Steering()->SetTarget(player->Team()->Opponents()->SupportingPlayer()->Pos());
 		player->Steering()->InterposeOn((player->Team()->Opponents()->SupportingPlayer()->Pos() - player->Ball()->Pos()).Length() / 2);
@@ -274,10 +275,10 @@ void SupportDefense::Execute(FieldPlayer* player)
 
 void SupportDefense::Exit(FieldPlayer* player)
 {
-	//set supporting player to null so that the team knows it has to 
+	//set supporting player to NULL so that the team knows it has to 
 	//determine a new one.
 	player->Steering()->InterposeOff();
-	player->Team()->SetSupportingDefensePlayer(nullptr);
+	player->Team()->SetSupportingDefensePlayer(NULL);
 }
 //*****************************************************************************SUPPORT ATTACKING PLAYER
 
@@ -348,7 +349,7 @@ void SupportAttacker::Execute(FieldPlayer* player)
 
 void SupportAttacker::Exit(FieldPlayer* player)
 {
-  //set supporting player to null so that the team knows it has to 
+  //set supporting player to NULL so that the team knows it has to 
   //determine a new one.
   player->Team()->SetSupportingPlayer(NULL);
 
@@ -389,7 +390,7 @@ void ReturnToHomeRegion::Execute(FieldPlayer* player)
     //if the ball is nearer this player than any other team member  &&
     //there is not an assigned receiver && the goalkeeper does not gave
     //the ball, go chase it
-    if ( player->isClosestTeamMemberToBall() &&
+    if ( (player->isClosestTeamMemberToBall() || player->SpontaneousDefense()) &&
          (player->Team()->Receiver() == NULL) &&
          !player->Pitch()->GoalKeeperHasBall())
     {
@@ -461,6 +462,7 @@ void Wait::Execute(FieldPlayer* player)
 
   else
   {
+	player->RecoverEndurance();
     player->Steering()->ArriveOff();
 
     player->SetVelocity(Vector2D(0,0));
@@ -485,7 +487,7 @@ void Wait::Execute(FieldPlayer* player)
    //if the ball is nearer this player than any other team member  AND
     //there is not an assigned receiver AND neither goalkeeper has
     //the ball, go chase it
-   if ((player->isClosestTeamMemberToBall()) &&
+   if ((player->isClosestTeamMemberToBall() || player->SpontaneousDefense()) &&
        player->Team()->Receiver() == NULL  &&
        !player->Pitch()->GoalKeeperHasBall())
    {
@@ -675,7 +677,16 @@ void Dribble::Execute(FieldPlayer* player)
   //if the ball is between the player and the home goal, it needs to swivel
   // the ball around by doing multiple small kicks and turns until the player 
   //is facing in the correct direction
-  if (dot < 0)
+  double supportToGoalSq = 0.0;
+  double toGoalSq = 1.0;
+
+  if (player->Team()->SupportingPlayer() )
+  {
+	  supportToGoalSq = Vec2DDistanceSq(player->Team()->OpponentsGoal()->Center(), player->Team()->SupportingPlayer()->Pos());
+	  toGoalSq = Vec2DDistanceSq(player->Team()->OpponentsGoal()->Center(), player->Pos());
+  }
+
+  if (dot < 0 || (toGoalSq < supportToGoalSq))
   {
     //the player's heading is going to be rotated by a small amount (Pi/4) 
     //and then the ball will be kicked in that direction

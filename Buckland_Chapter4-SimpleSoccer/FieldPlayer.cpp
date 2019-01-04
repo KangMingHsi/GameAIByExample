@@ -203,45 +203,32 @@ void  FieldPlayer::FindSafeDribbleDirection(Vector2D& kickDirection)
 			mostThreatenedPlayer = std::remove_const_t<decltype(opponentPlayer)>(opponentPlayer);
 		}
 	}
-	
+	double boxLen = Prm.PlayerComfortZone;
+	Vector2D AvoidDir;
+
+	Vector2D localPos = PointToLocalSpace((*mostThreatenedPlayer)->Pos(), Heading(), Side(), Pos());
+	double multiplier = 1.0 + (boxLen - localPos.x) / boxLen;
+	AvoidDir.y = ((*mostThreatenedPlayer)->BRadius() - localPos.y) * multiplier;
+	AvoidDir.x = ((*mostThreatenedPlayer)->BRadius() - localPos.y) * 0.2;
+
+	kickDirection = Vec2DNormalize(VectorToWorldSpace(AvoidDir, Heading(), Side())) * 2.0;
+
 	auto playerToWallDistanceFunc = [player = this, &walls = Team()->Pitch()->Walls()](int idx) {
 		Vector2D ThisCollisionPoint = player->Pos() - (walls[idx].Normal() * player->BRadius());
 		return DistanceToRayPlaneIntersection(ThisCollisionPoint,
 			walls[idx].Normal().GetReverse(),
 			walls[idx].From(),
 			walls[idx].Normal());};
+	double distUpWall = playerToWallDistanceFunc(2);
+	double distDownWall = playerToWallDistanceFunc(5);
 
-	double angle = 35.0;
+	int idx = (distUpWall < distDownWall) ? 2 : 5;
 
-	if (playerToWallDistanceFunc(2) < playerToWallDistanceFunc(5))
-	{
-		if (Heading().x < -0.00001)
-			angle *= -1;
-		if ((*mostThreatenedPlayer)->Pos().y > Pos().y)
-		{
-			angle *= 1;
-		}
-		else 
-		{
-			angle *= 2;
-		}
+	double halfHeight = (Team()->Pitch()->cyClient() / 2.0);
+	double distToWall = idx == 2 ? distUpWall : distDownWall;
 
-		//double time = Ball()->TimeToCoverDistance(Pos(), Pos()+kickDirection*Ball()->Velocity().Length(), Prm.MaxDribbleForce);
-	}
-	else
-	{
-		if (Heading().x > 0.00001)
-			angle *= -1;
-		if ((*mostThreatenedPlayer)->Pos().y > Pos().y)
-		{
-			angle *= 1;
-		}
-		else
-		{
-			angle *= 2;
-		}
-	}
-
-	Vec2DRotateAroundOrigin(kickDirection, angle);
+	kickDirection += Team()->Pitch()->Walls()[idx].Normal() * (halfHeight - distToWall) / halfHeight;
+	
+	kickDirection +=  Vec2DNormalize(Team()->OpponentsGoal()->Center() - Pos());
 }
 

@@ -82,7 +82,7 @@ public:
   //change to a new state
   void  ChangeState(State<entity_type>* pNewState)
   {
-    assert(pNewState && "<StateMachine::ChangeState>:trying to assign null state to current");
+    assert(pNewState && "<StateMachine::ChangeState>:trying to assign NULL state to current");
 
     //keep a record of the previous state
     m_pPreviousState = m_pCurrentState;

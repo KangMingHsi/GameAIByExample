@@ -52,7 +52,9 @@ PlayerBase::PlayerBase(SoccerTeam* home_team,
    m_dDistSqToBall(MaxFloat),
    m_iHomeRegion(home_region),
    m_iDefaultRegion(home_region),
-   m_PlayerRole(role)
+   m_PlayerRole(role),
+   m_dEndurance(100.0),
+   m_OriginMaxSpeed(max_speed)
 {
   
   //setup the vertex buffers and calculate the bounding radius
@@ -223,13 +225,13 @@ void PlayerBase::FindSupport()const
 
 void PlayerBase::FindDefenseSupport() const
 {
-	if (Team()->Opponents()->SupportingPlayer() == nullptr) return;
+	if (Team()->Opponents()->SupportingPlayer() == NULL) return;
 	//if there is no support we need to find a suitable player.
 	PlayerBase* BestSupportPly = Team()->DetermineBestSupportingDefender();
 
-	if (BestSupportPly == nullptr) return;
+	if (BestSupportPly == NULL) return;
 
-	if (Team()->SupportingDefensePlayer() == nullptr)
+	if (Team()->SupportingDefensePlayer() == NULL)
 	{
 		Team()->SetSupportingDefensePlayer(BestSupportPly);
 		
@@ -243,9 +245,10 @@ void PlayerBase::FindDefenseSupport() const
 	//if the best player available to support the attacker changes, update
 	//the pointers and send messages to the relevant players to update their
 	//states
-	if ((BestSupportPly != nullptr) && (BestSupportPly != Team()->SupportingDefensePlayer()))
-	{/*
-		if (Team()->SupportingDefensePlayer() != nullptr)
+	if ((BestSupportPly != NULL) && (BestSupportPly != Team()->SupportingDefensePlayer()))
+	{
+		/*
+		if (Team()->SupportingDefensePlayer() != NULL)
 		{
 			Dispatcher->DispatchMsg(SEND_MSG_IMMEDIATELY,
 				ID(),
@@ -263,6 +266,19 @@ void PlayerBase::FindDefenseSupport() const
 			Msg_SupportDefense,
 			NULL);
 	}
+}
+
+bool PlayerBase::SpontaneousDefense() const
+{
+	if (Team()->Opponents()->ControllingPlayer() != NULL && Team()->PlayerClosestToBall() != this && Role() == defender)
+	{
+		if (Team()->Opponents()->ControllingPlayer()->Pos().DistanceSq(Team()->HomeGoal()->Center()) < (WindowWidth*WindowWidth/8))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 

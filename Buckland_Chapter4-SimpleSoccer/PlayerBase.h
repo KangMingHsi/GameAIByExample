@@ -63,6 +63,10 @@ protected:
   //the buffer for the transformed vertices
   std::vector<Vector2D>   m_vecPlayerVBTrans;
 
+  //Endurance affects the max speed of the player, it may recover when the player is in wait state;
+  double m_dEndurance;
+
+  double m_OriginMaxSpeed;
 public:
 
 
@@ -91,7 +95,9 @@ public:
   //this messages the player that is closest to the supporting spot to
   //change state to support the attacking player
   void        FindSupport()const;
+  
   void		FindDefenseSupport()const;
+  bool		SpontaneousDefense()const;
   //returns true if the ball can be grabbed by the goalkeeper
   bool        BallWithinKeeperRange()const;
 
@@ -143,6 +149,8 @@ public:
   double       DistToHomeGoal()const;
 
   void        SetDefaultHomeRegion(){m_iHomeRegion = m_iDefaultRegion;}
+  void		  DecreaseEndurance() { m_dEndurance = max(m_dEndurance - 0.1, 0.0); SetMaxSpeed(m_OriginMaxSpeed * min(m_dEndurance + 33.3, 100.0) / 100.0); }
+  void		  RecoverEndurance() { m_dEndurance += min(m_dEndurance + 1.0, 100.0); SetMaxSpeed(m_OriginMaxSpeed * min(m_dEndurance + 33.3, 100.0) / 100.0); }
 
   SoccerBall* const        Ball()const;
   SoccerPitch* const       Pitch()const;
@@ -152,9 +160,5 @@ public:
   SoccerTeam*const         Team()const{return m_pTeam;}
   
 };
-
-
-
-
 
 #endif
