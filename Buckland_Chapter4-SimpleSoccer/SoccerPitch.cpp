@@ -11,6 +11,8 @@
 #include "PlayerBase.h"
 #include "TeamStates.h"
 #include "misc/FrameCounter.h"
+#include "Referee.h"
+#include "RefereeStates.h"
 
 const int NumRegionsHorizontal = 6; 
 const int NumRegionsVertical   = 3;
@@ -57,6 +59,16 @@ SoccerPitch::SoccerPitch(int cx, int cy):m_cxClient(cx),
   //make sure each team knows who their opponents are
   m_pRedTeam->SetOpponents(m_pBlueTeam);
   m_pBlueTeam->SetOpponents(m_pRedTeam); 
+
+  m_pReferee = new Referee(m_pRedTeam,
+	  8, ReturnToStartPlace::Instance(),
+	  Vector2D(0, 1),
+	  Vector2D(0.0, 0.0),
+	  Prm.PlayerMass,
+	  Prm.PlayerMaxForce,
+	  Prm.PlayerMaxSpeedWithoutBall,
+	  Prm.PlayerMaxTurnRate,
+	  Prm.PlayerScale);
 
   //create the walls
   Vector2D TopLeft(m_pPlayingArea->Left(), m_pPlayingArea->Top());                                        
@@ -111,6 +123,7 @@ void SoccerPitch::Update()
   //update the teams
   m_pRedTeam->Update();
   m_pBlueTeam->Update();
+  m_pReferee->Update();
 
   //if a goal has been detected reset the pitch ready for kickoff
   if (m_pBlueGoal->Scored(m_pBall) || m_pRedGoal->Scored(m_pBall))
@@ -188,6 +201,7 @@ bool SoccerPitch::Render()
   //Render the teams
   m_pRedTeam->Render();
   m_pBlueTeam->Render(); 
+  m_pReferee->Render();
 
   //render the walls
   gdi->WhitePen();

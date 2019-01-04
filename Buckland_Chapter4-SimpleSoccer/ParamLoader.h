@@ -97,6 +97,7 @@ private:
     bNonPenetrationConstraint   = GetNextParameterBool(); 
 
 
+
     BallWithinReceivingRangeSq = BallWithinReceivingRange * BallWithinReceivingRange;
     KeeperInBallRangeSq      = KeeperInBallRange * KeeperInBallRange;
     PlayerInTargetRangeSq    = PlayerInTargetRange * PlayerInTargetRange;   

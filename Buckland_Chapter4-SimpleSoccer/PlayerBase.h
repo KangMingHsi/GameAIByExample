@@ -35,7 +35,7 @@ class PlayerBase : public MovingEntity,
 
 public:
   
-  enum player_role{goal_keeper, attacker, defender};
+  enum player_role{goal_keeper, attacker, defender, referee};
 
 protected:
 
@@ -67,6 +67,7 @@ protected:
   double m_dEndurance;
 
   double m_OriginMaxSpeed;
+
 public:
 
 

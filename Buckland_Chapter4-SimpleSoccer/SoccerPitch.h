@@ -27,7 +27,7 @@ class SoccerTeam;
 class SoccerBall;
 class SoccerTeam;
 class PlayerBase;
-
+class Referee;
 
 class SoccerPitch
 { 
@@ -40,7 +40,9 @@ public:
 
   Goal*                m_pRedGoal;
   Goal*                m_pBlueGoal;
-   
+  
+  Referee*			m_pReferee;
+
   //container for the boundary walls
   std::vector<Wall2D>  m_vecWalls;
 

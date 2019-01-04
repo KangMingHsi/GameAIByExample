@@ -130,8 +130,13 @@ Vector2D SupportSpotCalculator::DetermineBestSupportingPosition()
 	  dist = Vec2DDistance(m_pTeam->SupportingPlayer()->Pos(), curSpot->m_vPos);
 	  temp = fabs(OptDistance - dist);
 	  if(temp < OptDistance)
-		curSpot->m_dScore += Prm.Spot_DistFromControllingPlayerScore * (OptDistance - temp) / OptDistance;
+		curSpot->m_dScore += Prm.Spot_ClosenessToSupportingPlayerScore * (OptDistance - temp) / OptDistance;
+
     }
+	
+	if(Vec2DDistanceSq(m_pTeam->ControllingPlayer()->Pos(), m_pTeam->OpponentsGoal()->Center()) > Vec2DDistanceSq(curSpot->m_vPos, m_pTeam->OpponentsGoal()->Center()))
+		curSpot += Prm.Spot_AheadOfAttackerScore;
+	
 
     //check to see if this spot has the highest score so far
     if (curSpot->m_dScore > BestScoreSoFar)

@@ -15,10 +15,8 @@
 #include "Messaging/Telegram.h"
 #include "constants.h"
 
-
 class GoalKeeper;
 class SoccerPitch;
-
 
 class GlobalKeeperState: public State<GoalKeeper>
 {
